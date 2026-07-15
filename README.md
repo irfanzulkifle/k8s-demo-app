@@ -61,3 +61,4 @@ cd app && python -m pytest tests/
 | IaC | Terraform (kind provider) |
 | CI/CD | GitHub Actions, GHCR |
 | Scanning | Trivy |
+
