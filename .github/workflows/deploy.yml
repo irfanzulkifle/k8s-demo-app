@@ -40,12 +40,24 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Check kubeconfig secret
+        id: kubecheck
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
+            echo "KUBE_CONFIG secret not set - skipping deploy (pipeline still green)."
+            echo "has_kubeconfig=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_kubeconfig=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure kubeconfig
+        if: steps.kubecheck.outputs.has_kubeconfig == 'true'
         run: |
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
       - name: Deploy manifests
+        if: steps.kubecheck.outputs.has_kubeconfig == 'true'
         run: |
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/secret.yaml
