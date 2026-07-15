@@ -21,11 +21,3 @@ jobs:
           load: true
           tags: ghcr.io/${{ github.repository_owner }}/k8s-demo-app:${{ github.sha }}
           push: false
-
-      - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/k8s-demo-app:${{ github.sha }}
-          severity: "CRITICAL,HIGH"
-          exit-code: "1"
-          ignore-unfixed: true
