@@ -9,8 +9,8 @@ scanned, auto-scaled service.
 - **Docker**: multi-stage build, non-root runtime user, healthcheck
 - **Kubernetes**: Deployment, Service, ConfigMap, Secret, HPA with probes and resource limits
 - **Terraform**: provisions a local Kind cluster (swap the provider for EKS to go cloud)
-- **CI/CD**: GitHub Actions builds, scans with Trivy, pushes to GHCR and deploys
-- **Security**: image vulnerability gate, no hardcoded secrets, OIDC-ready for cloud
+- **CI/CD**: GitHub Actions builds the image, scans it with Trivy (fails on CRITICAL/HIGH), then deploys when a cluster is configured
+- **Security**: image vulnerability gate (Trivy), no hardcoded secrets, OIDC-ready for cloud
 
 ## Run locally
 
@@ -59,6 +59,20 @@ cd app && python -m pytest tests/
 | Container | Docker (multi-stage, slim) |
 | Orchestration | Kubernetes (Kind locally, EKS-ready) |
 | IaC | Terraform (kind provider) |
-| CI/CD | GitHub Actions, GHCR |
-| Scanning | Trivy |
+| CI/CD | GitHub Actions (build, Trivy scan, conditional deploy) |
+| Scanning | Trivy (CRITICAL/HIGH gate) |
 
+## CI/CD
+
+The `build-scan-deploy` workflow runs on every push to `main`:
+
+1. **Build** the Docker image with Buildx.
+2. **Scan** with Trivy. The build fails on any CRITICAL or HIGH vulnerability
+   (with `ignore-unfixed: true` so only fixable issues block the gate).
+3. **Deploy** (only on `main`, and only if a `KUBE_CONFIG` secret is set in
+   repo settings). Without the secret the deploy step is skipped and the
+   pipeline stays green — set the secret to a base64-encoded kubeconfig to
+   enable real deploys to your cluster.
+
+To enable deploys, add a repository secret `KUBE_CONFIG` containing the
+base64-encoded output of `cat ~/.kube/config` from your cluster.
