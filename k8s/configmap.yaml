@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-demo-config
+data:
+  APP_ENV: "dev"
+  APP_REGION: "kind-local"
