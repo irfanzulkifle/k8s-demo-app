@@ -4,15 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
-
-env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/k8s-demo-app
 
 jobs:
   build-scan-push:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -24,22 +19,21 @@ jobs:
         with:
           context: .
           load: true
-          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/k8s-demo-app:${{ github.sha }}
           push: false
 
       - name: Trivy scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/k8s-demo-app:${{ github.sha }}
           severity: "CRITICAL,HIGH"
           exit-code: "1"
           ignore-unfixed: true
 
   deploy:
     needs: build-scan-push
-    if: github.ref == 'refs/heads/main' && secrets.KUBE_CONFIG != ''
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -55,7 +49,7 @@ jobs:
         run: |
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/secret.yaml
-          kubectl set image deployment/k8s-demo-app k8s-demo-app=${{ env.IMAGE }}:${{ github.sha }}
+          kubectl set image deployment/k8s-demo-app k8s-demo-app=ghcr.io/${{ github.repository_owner }}/k8s-demo-app:${{ github.sha }}
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
           kubectl apply -f k8s/hpa.yaml
